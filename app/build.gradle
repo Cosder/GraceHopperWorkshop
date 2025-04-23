@@ -1,0 +1,57 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.yourpackage'
+version = '1.0'
+
+sourceCompatibility = '11' // or 17 if you're using a newer JDK
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // AWS Lambda core
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.2'
+
+    // AWS Lambda events (for DynamodbEvent)
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.0'
+
+    // SLF4J API and a backend (Logback is common, but use log4j or others if preferred)
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+
+    // Optional: JSON processing (helpful for debugging or transforming events)
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+
+    // Optional: Unit testing
+    testImplementation 'junit:junit:4.13.2'
+}
+
+//task buildZip(type: Zip){
+//    dependsOn(check)
+//    from compileJava
+//    from processResources
+//    into('lib'){
+//        from configurations.runtimeClasspath
+//    }
+//    project.logger.lifecycle('Built the zip file in ' + this.buildDir + 'app/distributions/app-1.0-SNAPSHOT.zip')
+//}
+
+// Custom task to build a zip for AWS Lambda
+task buildZip(type: Zip) {
+    dependsOn build
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    from sourceSets.main.output
+
+    // Duplicate handling strategy to ignore duplicates
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    archiveBaseName.set('lambda-package')
+    archiveExtension.set('zip')
+    destinationDirectory.set(file("$buildDir/distributions"))
+}
